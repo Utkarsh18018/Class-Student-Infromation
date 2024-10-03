@@ -10,6 +10,12 @@ const closeStudentForm = document.getElementById('closeStudentForm');
 // Define the unique 4-digit teacher PIN
 const teacherPIN = '1234'; 
 
+// Search functionality
+const resetSearch = () => {
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchResultContainer').style.display = 'none';
+};
+
 // Event listener for student button
 studentBtn.addEventListener('click', () => {
     studentForm.style.display = 'flex'; // Show student registration form
@@ -68,7 +74,6 @@ document.getElementById('toggleStudentListBtn').addEventListener('click', functi
     studentListContainer.style.display = studentListContainer.style.display === 'none' ? 'block' : 'none';
 });
 
-// Handle student registration
 studentForm.addEventListener('submit', async function (event) {
     event.preventDefault(); // Prevent page refresh
     const name = document.getElementById('name').value;
@@ -86,8 +91,9 @@ studentForm.addEventListener('submit', async function (event) {
             body: JSON.stringify({ name, rollno: admission_number, section, gmail }),
         });
 
-        const data = await response.json();
-        if (data.success) {
+        const data = await response.json(); // Parse the JSON response once
+
+        if (response.ok) {
             // If successful, update the student list
             const studentList = document.getElementById('studentList');
             const newStudent = document.createElement('li');
@@ -103,103 +109,40 @@ studentForm.addEventListener('submit', async function (event) {
             studentList.appendChild(newStudent);
             alert(data.message); // Show success message
         } else {
-            alert('Failed to register student: ' + data.message);
+            alert('Failed to register student: ' + data.message); // Provide feedback on failure
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error registering student');
+        alert('Error registering student'); // Alert on catch error
     }
 
     studentForm.reset(); // Clear the form
 });
 
 
-studentForm.addEventListener('submit', async function (event) {
-    event.preventDefault(); // Prevent page refresh
-    const name = document.getElementById('name').value;
-    const admission_number = document.getElementById('rollno').value;
-    const section = document.getElementById('section').value;
-    const gmail = document.getElementById('gmail').value;
-
-    try {
-        // Sending a POST request to register the student
-        const response = await fetch('/registerStudent', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name, rollno: admission_number, section, gmail }),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-            // If successful, update the student list
-            const studentList = document.getElementById('studentList');
-            const newStudent = document.createElement('li');
-            newStudent.textContent = `${data.student.name} (Roll No: ${data.student.rollno}, Section: ${data.student.section}), Gmail: ${data.student.gmail}`;
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'X';
-            deleteBtn.addEventListener('click', function () {
-                studentList.removeChild(newStudent);
-            });
-
-            newStudent.appendChild(deleteBtn);
-            studentList.appendChild(newStudent);
-            alert(data.message); // Show success message
-        } else {
-            alert('Failed to register student: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error registering student');
-    }
-
-    studentForm.reset(); // Clear the form
-});
 
 
-// Search functionality
-const resetSearch = () => {
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('searchResultContainer').style.display = 'none';
-};
 
-document.getElementById('searchButton').addEventListener('click', function () {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const studentListItems = document.querySelectorAll('#studentList li');
 
-    const results = Array.from(studentListItems).filter(item => {
-        const text = item.textContent.toLowerCase();
-        return text.includes(searchTerm);
-    });
 
-    const searchResults = document.getElementById('searchResults');
-    searchResults.innerHTML = '';
 
-    if (results.length > 0) {
-        results.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item.textContent;
-            searchResults.appendChild(li);
-        });
-        document.getElementById('searchResultContainer').style.display = 'block';
-    } else {
-        searchResults.innerHTML = ''; // Clear previous search results
-        document.getElementById('searchResultContainer').style.display = 'none';
-        alert('No results found.');
-    }
-});
+
 
 // Event listener for search button
 document.getElementById('searchButton').addEventListener('click', async function () {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
     try {
-        const response = await fetch(`/searchStudents?name=${encodeURIComponent(searchTerm)}`);
+        const response = await fetch(`/searchStudents?name=${encodeURIComponent(searchTerm)}&timestamp=${new Date().getTime()}`);
+
         const results = await response.json();
 
-        const searchResults = document.getElementById('searchResults');
+        // Check if results contain an error field
+        if (results.error) {
+            throw new Error(results.error); // Throws an error with the message from the server
+        }
+
+        const searchResults = document.getElementById('studentList');
         searchResults.innerHTML = ''; // Clear previous results
 
         if (results.length > 0) {
@@ -208,15 +151,15 @@ document.getElementById('searchButton').addEventListener('click', async function
                 li.textContent = `${student.name} (Roll No: ${student.rollno}, Section: ${student.section}, Gmail: ${student.gmail})`;
                 searchResults.appendChild(li);
             });
-            document.getElementById('searchResultContainer').style.display = 'block'; // Show search results container
+            document.getElementById('studentListContainer').style.display = 'block'; // Show search results container
         } else {
             // Show no results only if there are no results found
-            document.getElementById('searchResultContainer').style.display = 'none'; // Hide search results container
+            document.getElementById('studentListContainer').style.display = 'none'; // Hide search results container
             alert('No results found.'); // Alert only when no results are found
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error searching students');
+        alert('Error searching students : ' + error.message);
     }
 });
 

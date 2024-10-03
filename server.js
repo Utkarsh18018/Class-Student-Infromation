@@ -28,10 +28,10 @@ app.post('/registerStudent', async (req, res) => {
 
     try {
         const result = await pool.query(
-            'INSERT INTO students (name, rollno, section, gmail) VALUES ($1, $2, $3, $4) RETURNING *',
+            'INSERT INTO students (name, rollno, section, gmail) VALUES ($1, $2, $3, $4)',
             [name, rollno, section, gmail]
         );
-        res.status(201).json({ success: true, student: result.rows[0], message: 'Student registered successfully!' });
+        res.status(201).json({ success: true, message: 'Student registered successfully!' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, error: 'Database insertion failed' });
@@ -48,27 +48,20 @@ app.get('/students', async (req, res) => {
         res.status(500).json({ error: 'Database retrieval failed' });
     }
 });
+
+
 app.get('/', (req, res) => {
     console.log('Root route accessed');
     res.sendFile(__dirname + '/public/index.html');
 });
-// GET endpoint to search for students by name
-app.get('/searchStudents', async (req, res) => {
-    const { name } = req.query; // Get the name parameter from the query string
 
-    try {
-        const result = await pool.query(
-            'SELECT * FROM students WHERE LOWER(name) LIKE $1', 
-            [`%${name.toLowerCase()}%`] // Use LIKE for partial matching
-        );
-        res.status(200).json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database search failed' });
-    }
-});
+
+
+
+
 // GET endpoint to search for students by name
 app.get('/searchStudents', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store'); // Disable caching
     const { name } = req.query; // Get the name from the query parameters
 
     try {
@@ -83,6 +76,8 @@ app.get('/searchStudents', async (req, res) => {
         res.status(500).json({ error: 'Database retrieval failed' });
     }
 });
+
+
 // GET endpoint to retrieve all students
 app.get('/students', async (req, res) => {
     try {
